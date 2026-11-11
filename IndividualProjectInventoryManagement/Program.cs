@@ -1,102 +1,117 @@
 ﻿using IndividualProjectInventoryManagement.Models;
 using IndividualProjectInventoryManagement.Models.Enums;
 using IndividualProjectInventoryManagement.Rules;
+using IndividualProjectInventoryManagement.Services;
+using IndividualProjectInventoryManagement.Data;
 using System.Text;
 
 
 Console.WriteLine("Inventory Management - Knappen's Yarn Store");
 
-// TEMPORARY test program: creates one product of each category and tries
-// the rules, so we can see that the model classes work. It will be replaced
-// by the real start-up code later.
+// TEMPORARY test program: runs every Inventory method and prints the result,
+// so we can see that the in-memory part works before building the menu.
+// It will be replaced by the real start-up code later.
 
 // Makes the console show å, ä and ö correctly
 Console.OutputEncoding = Encoding.UTF8;
 
+Inventory inventory = new Inventory();
+
 // ---------------------------------------------------------------
-// 1. Valid products
+// 1. Fill the inventory. Each product receives an ID here.
 // ---------------------------------------------------------------
-// The list type is Product, but it holds a Yarn, a Needle, a Hook and an
-// OtherSupply side by side. That is polymorphism.
-List<Product> products = new List<Product>
+foreach (Product product in SampleData.Create())
 {
-    //                 brand            name                 material            size   length qty price
-    new Yarn(YarnBrand.Jarbo, YarnName.MorningMist, YarnMaterial.Merino, 50m, 200m, 24, 39m),
-    new Yarn(YarnBrand.Drops, YarnName.NordicSky, YarnMaterial.Wool, 100m, 150m, 8, 45m),
-    new Needle(NeedleBrand.Addi, NeedleName.FineLace, NeedleMaterial.Birch, NeedleType.Circular, 4.0m, 80m, 6, 129m),
-    new Hook(HookBrand.Clover, HookName.Petite, HookMaterial.Aluminium, 3.5m, 14m, 0, 59m),
-    new OtherSupply(OtherSupplyBrand.Prym, OtherSupplyName.StitchMarkers, OtherSupplyMaterial.Plastic, 10m, 12, 25m)
-};
-
-// Inventory will hand out IDs later. For this test we number them ourselves.
-int nextId = 1;
-
-foreach (Product product in products)
-{
-    product.Id = nextId++;
-
-    // One call, different output per object: polymorphism in action
-    Console.WriteLine(product.DisplayProductInfo());
-    Console.WriteLine();
+    inventory.AddProduct(product);
 }
 
-// ---------------------------------------------------------------
-// 2. Stock status and adjusting stock
-// ---------------------------------------------------------------
-Console.WriteLine("STOCK STATUS");
-foreach (Product product in products)
-{
-    // Yarn warns at 10 or fewer, needles and hooks at 3 or fewer, supplies at 5 or fewer
-    Console.WriteLine($"  {product,-40} {product.Quantity,3} pcs  {product.GetStockStatus().ToDisplayText()} (low at {product.LowStockThreshold})");
-}
-
-Product hook = products[3];
-hook.AdjustQuantity(10);
+Console.WriteLine($"{inventory.Count} products added.");
 Console.WriteLine();
-Console.WriteLine($"After a delivery of 10: {hook} now has {hook.Quantity} pcs, {hook.GetStockStatus().ToDisplayText()}");
 
 // ---------------------------------------------------------------
-// 3. Invalid input must be rejected
+// 2. Duplicates: the same article cannot be added twice
 // ---------------------------------------------------------------
-Console.WriteLine();
-Console.WriteLine("REJECTED:");
+Console.WriteLine("DUPLICATES");
 
 try
 {
-    // 2.7 mm is not an allowed needle size
-    new Needle(NeedleBrand.Addi, NeedleName.FineLace, NeedleMaterial.Birch, NeedleType.Circular, 2.7m, 80m, 6, 129m);
-}
-catch (ArgumentException ex)
-{
-    Console.WriteLine($"  {ex.Message}");
-}
-
-try
-{
-    // MorningMist is a Järbo yarn, not a Drops yarn
-    new Yarn(YarnBrand.Drops, YarnName.MorningMist, YarnMaterial.Wool, 50m, 200m, 5, 39m);
-}
-catch (ArgumentException ex)
-{
-    Console.WriteLine($"  {ex.Message}");
-}
-
-try
-{
-    // A negative quantity is rejected by the Product class
-    new Hook(HookBrand.Addi, HookName.SoftGrip, HookMaterial.Steel, 3.0m, 14m, -1, 59m);
-}
-catch (ArgumentException ex)
-{
-    Console.WriteLine($"  {ex.Message}");
-}
-
-try
-{
-    // Removing more than we have
-    products[0].AdjustQuantity(-100);
+    // Exactly the same as product #1
+    inventory.AddProduct(new Yarn(YarnBrand.Jarbo, YarnName.MorningMist, YarnMaterial.Merino, 50m, 200m, 5, 39m));
 }
 catch (InvalidOperationException ex)
 {
-    Console.WriteLine($"  {ex.Message}");
+    Console.WriteLine($"  Rejected: {ex.Message}");
+}
+
+// The same yarn in a 100 g ball is a DIFFERENT product, so this is fine
+Product added = inventory.AddProduct(new Yarn(YarnBrand.Jarbo, YarnName.MorningMist, YarnMaterial.Merino, 100m, 200m, 5, 69m));
+Console.WriteLine($"  Added: {added}");
+Console.WriteLine();
+
+// ---------------------------------------------------------------
+// 3. Change stock and price (all changes go through Inventory)
+// ---------------------------------------------------------------
+Console.WriteLine("STOCK AND PRICE");
+Console.WriteLine($"  Delivery of 20 to #4: {inventory.AdjustStock(4, 20)}");
+Console.WriteLine($"  Sold all of #16:      {inventory.AdjustStock(16, -9)}");
+Console.WriteLine($"  New price for #1:     {inventory.SetPrice(1, 42m)}");
+Console.WriteLine($"  Stock of #99:         {inventory.AdjustStock(99, 1)}   (no such product)");
+
+try
+{
+    inventory.AdjustStock(1, -1000);
+}
+catch (InvalidOperationException ex)
+{
+    Console.WriteLine($"  Rejected: {ex.Message}");
+}
+
+Console.WriteLine();
+
+// ---------------------------------------------------------------
+// 4. View: filter, search and sort
+// ---------------------------------------------------------------
+PrintList("NEEDS ATTENTION (low stock or out of stock)",
+    inventory.ViewProducts(new ProductFilter(NeedsAttentionOnly: true)));
+
+PrintList("SEARCH \"jarbo\" (the products show Järbo)",
+    inventory.ViewProducts(new ProductFilter(SearchText: "jarbo")));
+
+PrintList("SEARCH \"bamboo 2.5\" (both words must match)",
+    inventory.ViewProducts(new ProductFilter(SearchText: "bamboo 2.5")));
+
+PrintList("YARN, MOST EXPENSIVE FIRST",
+    inventory.ViewProducts(new ProductFilter(Category: ProductCategory.Yarn), SortField.Price, descending: true));
+
+// ---------------------------------------------------------------
+// 5. Update (replace) and delete
+// ---------------------------------------------------------------
+Console.WriteLine("UPDATE AND DELETE");
+
+// Product #12 becomes a 2.5 mm hook. The size cannot be edited on the
+// existing object, so we hand in a new one. It keeps the ID 12.
+bool updated = inventory.UpdateProduct(12, new Hook(HookBrand.Clover, HookName.Petite, HookMaterial.Steel, 2.5m, 12m, 7, 49m));
+Console.WriteLine($"  Updated #12: {updated}, size is now {inventory.FindById(12)?.SizeText}");
+
+Console.WriteLine($"  Deleted #5:  {inventory.DeleteProduct(5)}");
+Console.WriteLine($"  Deleted #99: {inventory.DeleteProduct(99)}   (no such product)");
+Console.WriteLine($"  Products left: {inventory.Count}");
+Console.WriteLine();
+
+// ---------------------------------------------------------------
+// 6. Report
+// ---------------------------------------------------------------
+Console.WriteLine(inventory.GenerateReport().ToText());
+
+// Prints a heading and one line per product
+static void PrintList(string title, List<Product> products)
+{
+    Console.WriteLine($"{title}: {products.Count} found");
+
+    foreach (Product product in products)
+    {
+        Console.WriteLine($"  {product,-44} {product.Quantity,3} pcs  {product.Price,7:F2} {Product.BaseCurrency}");
+    }
+
+    Console.WriteLine();
 }

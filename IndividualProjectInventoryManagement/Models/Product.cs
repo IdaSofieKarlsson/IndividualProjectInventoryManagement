@@ -147,6 +147,21 @@ namespace IndividualProjectInventoryManagement.Models
             }
         }
 
+        // Two products with the same IdentityKey are the SAME product:
+        // same category, brand, name, material, size, length and (for needles)
+        // type. Inventory uses this to refuse duplicates, so the shop never
+        // has two rows for one article. Stock goes up on the existing row.
+        // "0.####" prints 4.0 and 4.00 identically, as "4".
+        public string IdentityKey => string.Join(
+            "|",
+            Category,
+            BrandText,
+            NameText,
+            MaterialText,
+            Size?.ToString("0.####", CultureInfo.InvariantCulture),
+            Length?.ToString("0.####", CultureInfo.InvariantCulture),
+            ExtraText);
+
         // --------------------------------------------------------------
         // Constructor
         // --------------------------------------------------------------

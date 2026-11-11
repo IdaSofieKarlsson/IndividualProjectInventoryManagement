@@ -28,4 +28,22 @@ namespace IndividualProjectInventoryManagement.Models.Enums
         LowStock,
         OutOfStock
     }
+
+    // What a list of products can be sorted by.
+    // Status sorts in the order InStock, LowStock, OutOfStock, so sorting
+    // DESCENDING by status puts the products that need attention first.
+    public enum SortField
+    {
+        Id,
+        Category,
+        Brand,
+        Name,
+        Material,
+        Size,
+        Length,
+        Quantity,
+        Price,
+        TotalValue,
+        Status
+    }
 }
