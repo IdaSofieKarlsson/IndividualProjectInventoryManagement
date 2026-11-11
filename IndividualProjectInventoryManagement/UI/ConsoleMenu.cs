@@ -21,10 +21,12 @@ namespace IndividualProjectInventoryManagement.UI
     public class ConsoleMenu
     {
         private readonly Inventory inventory;
+        private readonly CurrencyConverter currencyConverter;
 
-        public ConsoleMenu(Inventory inventory)
+        public ConsoleMenu(Inventory inventory, CurrencyConverter currencyConverter)
         {
             this.inventory = inventory;
+            this.currencyConverter = currencyConverter;
         }
 
         // Runs until the user chooses 0
@@ -34,7 +36,7 @@ namespace IndividualProjectInventoryManagement.UI
             {
                 ShowMainMenu();
 
-                int choice = ConsoleInput.ReadChoice(8);
+                int choice = ConsoleInput.ReadChoice(9);
 
                 if (choice == 0)
                 {
@@ -73,6 +75,7 @@ namespace IndividualProjectInventoryManagement.UI
             Display.Header("KNAPPEN'S YARN STORE");
             Console.WriteLine($"{inventory.Count} products in the inventory");
             Console.WriteLine($"Saved automatically to: {inventory.StorageLocation}");
+            Console.WriteLine($"Prices shown in {currencyConverter.Selected} ({currencyConverter.RateInfo})");
 
             int needAttention = inventory.ViewProducts(new ProductFilter(NeedsAttentionOnly: true)).Count;
 
@@ -90,6 +93,7 @@ namespace IndividualProjectInventoryManagement.UI
             Console.WriteLine("  6. Inventory report");
             Console.WriteLine("  7. Products that need attention");
             Console.WriteLine("  8. Sorted by total value");
+            Console.WriteLine("  9. Change display currency");
             Console.WriteLine("  0. Exit");
             Console.WriteLine();
         }
@@ -106,6 +110,7 @@ namespace IndividualProjectInventoryManagement.UI
                 case 6: ShowReport(); break;
                 case 7: ShowNeedsAttention(); break;
                 case 8: ShowByValue(); break;
+                case 9: ChangeCurrency(); break;
             }
         }
 
@@ -132,7 +137,7 @@ namespace IndividualProjectInventoryManagement.UI
                 Console.WriteLine($"Sort:   {sortBy.ToDisplayText()} ({(descending ? "descending" : "ascending")})");
                 Console.WriteLine();
 
-                TablePrinter.Print(inventory.ViewProducts(filter, sortBy, descending));
+                PrintTable(inventory.ViewProducts(filter, sortBy, descending));
 
                 Console.WriteLine();
                 Console.WriteLine("  1. Filter by category");
@@ -205,6 +210,11 @@ namespace IndividualProjectInventoryManagement.UI
             {
                 Console.WriteLine();
                 Console.WriteLine(product.DisplayProductInfo());
+
+                if (currencyConverter.Selected != Currency.SEK)
+                {
+                    Console.WriteLine($"  In {currencyConverter.Selected,-5}  : price {currencyConverter.Format(product.Price)}, value {currencyConverter.Format(product.TotalValue)}");
+                }
             }
         }
 
@@ -348,15 +358,15 @@ namespace IndividualProjectInventoryManagement.UI
             InventoryReport report = inventory.GenerateReport();
 
             Console.Clear();
-            Console.WriteLine(report.ToText());
+            Console.WriteLine(report.ToText(currencyConverter));
 
             if (ConsoleInput.Confirm("Save the report to a text file?"))
             {
-                SaveReport(report);
+                SaveReport(report, currencyConverter);
             }
         }
 
-        private static void SaveReport(InventoryReport report)
+        private static void SaveReport(InventoryReport report, CurrencyConverter converter)
         {
             string fileName = $"inventory-report-{report.GeneratedAt.ToString("yyyyMMdd-HHmm", CultureInfo.InvariantCulture)}.txt";
 
@@ -366,7 +376,7 @@ namespace IndividualProjectInventoryManagement.UI
 
             try
             {
-                File.WriteAllText(path, report.ToText(), Encoding.UTF8);
+                File.WriteAllText(path, report.ToText(converter), Encoding.UTF8);
                 Display.Success($"Report saved to: {path}");
             }
             // Files can fail for reasons we do not control: a full disk,
@@ -385,14 +395,39 @@ namespace IndividualProjectInventoryManagement.UI
             Display.Header("PRODUCTS THAT NEED ATTENTION");
 
             // Status descending: out of stock first, then low stock
-            TablePrinter.Print(inventory.ViewProducts(
+            PrintTable(inventory.ViewProducts(
                 new ProductFilter(NeedsAttentionOnly: true), SortField.Status, descending: true));
         }
 
         private void ShowByValue()
         {
             Display.Header("PRODUCTS BY TOTAL VALUE (HIGHEST FIRST)");
-            TablePrinter.Print(inventory.ViewProducts(sortBy: SortField.TotalValue, descending: true));
+            PrintTable(inventory.ViewProducts(sortBy: SortField.TotalValue, descending: true));
+        }
+
+        // ==============================================================
+        // 9. Display currency
+        // ==============================================================
+        // Only changes what is SHOWN. Prices are always stored in SEK.
+        private void ChangeCurrency()
+        {
+            Display.Header("DISPLAY CURRENCY");
+            Console.WriteLine($"Rates: {currencyConverter.RateInfo}");
+
+            if (!currencyConverter.IsUsingLiveRates && currencyConverter.ErrorMessage != null)
+            {
+                Display.Warning(currencyConverter.ErrorMessage);
+            }
+
+            if (ConsoleInput.TryPick("Show prices in", Enum.GetValues<Currency>(),
+                    item => item == Currency.SEK
+                        ? "SEK (the shop's own currency)"
+                        : $"{item} (1 SEK = {currencyConverter.GetRate(item).ToString("0.####", CultureInfo.InvariantCulture)} {item})",
+                    out Currency chosen))
+            {
+                currencyConverter.Selected = chosen;
+                Display.Success($"Prices are now shown in {chosen}.");
+            }
         }
 
         // ==============================================================
@@ -419,6 +454,8 @@ namespace IndividualProjectInventoryManagement.UI
 
             return product;
         }
+
+        private void PrintTable(IReadOnlyList<Product> products) => TablePrinter.Print(products, currencyConverter);
 
         private static void WarnIfLow(Product product)
         {

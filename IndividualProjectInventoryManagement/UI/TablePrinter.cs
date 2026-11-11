@@ -1,16 +1,15 @@
-﻿using IndividualProjectInventoryManagement.Models;
+﻿using System.Globalization;
+using IndividualProjectInventoryManagement.Models;
 using IndividualProjectInventoryManagement.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+using IndividualProjectInventoryManagement.Services;
 
 namespace IndividualProjectInventoryManagement.UI
 {
     // ------------------------------------------------------------------
     // TablePrinter - prints a list of products as a table
     // ------------------------------------------------------------------
-    // The width of every column is measured from the actual content, so long
+    // The same idea as PrintAssetList in the Asset Tracking project: the
+    // width of every column is measured from the actual content, so long
     // names never break the layout.
     //
     // Rows are coloured by stock status:
@@ -29,7 +28,7 @@ namespace IndividualProjectInventoryManagement.UI
         private static readonly bool[] RightAligned =
             { true, false, false, false, false, false, true, true, true, true, false };
 
-        public static void Print(IReadOnlyList<Product> products)
+        public static void Print(IReadOnlyList<Product> products, CurrencyConverter converter)
         {
             if (products.Count == 0)
             {
@@ -38,14 +37,18 @@ namespace IndividualProjectInventoryManagement.UI
             }
 
             // Turn every product into one row of text cells
-            List<string[]> rows = products.Select(ToRow).ToList();
+            // The price column shows the chosen currency, e.g. "Price (EUR)"
+            string[] headers = (string[])Headers.Clone();
+            headers[9] = $"Price ({converter.Selected})";
+
+            List<string[]> rows = products.Select(product => ToRow(product, converter)).ToList();
 
             // Column width = the longest of the header and all its cells
-            int[] widths = Headers
+            int[] widths = headers
                 .Select((header, column) => Math.Max(header.Length, rows.Max(row => row[column].Length)))
                 .ToArray();
 
-            WriteRow(Headers, widths);
+            WriteRow(headers, widths);
             Console.WriteLine(new string('-', widths.Sum() + 2 * (widths.Length - 1)));
 
             for (int i = 0; i < products.Count; i++)
@@ -62,10 +65,10 @@ namespace IndividualProjectInventoryManagement.UI
             }
 
             Console.WriteLine();
-            Console.WriteLine($"{products.Count} product(s). Prices in {Product.BaseCurrency}.");
+            Console.WriteLine($"{products.Count} product(s). Prices in {converter.Selected}.");
         }
 
-        private static string[] ToRow(Product product) => new[]
+        private static string[] ToRow(Product product, CurrencyConverter converter) => new[]
         {
             product.Id.ToString(CultureInfo.InvariantCulture),
             product.Category.ToDisplayText(),
@@ -76,7 +79,7 @@ namespace IndividualProjectInventoryManagement.UI
             product.SizeText,
             product.LengthText,
             product.Quantity.ToString(CultureInfo.InvariantCulture),
-            product.Price.ToString("F2", CultureInfo.InvariantCulture),
+            converter.Convert(product.Price).ToString("F2", CultureInfo.InvariantCulture),
             product.GetStockStatus() switch
             {
                 StockStatus.OutOfStock => "OUT",

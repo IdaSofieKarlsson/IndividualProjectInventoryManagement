@@ -1,9 +1,7 @@
-﻿using IndividualProjectInventoryManagement.Models;
-using IndividualProjectInventoryManagement.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
+using IndividualProjectInventoryManagement.Models;
+using IndividualProjectInventoryManagement.Models.Enums;
 
 namespace IndividualProjectInventoryManagement.Services
 {
@@ -66,7 +64,8 @@ namespace IndividualProjectInventoryManagement.Services
         }
 
         // The whole report as text
-        public string ToText()
+        // Pass a converter to also show the total in the chosen currency
+        public string ToText(CurrencyConverter? converter = null)
         {
             // StringBuilder collects text efficiently. Appending to a normal
             // string many times creates a new string each time.
@@ -78,6 +77,12 @@ namespace IndividualProjectInventoryManagement.Services
             text.AppendLine(line);
             text.AppendLine($"Products: {ProductCount}    Units in stock: {TotalUnits}");
             text.AppendLine($"Total inventory value: {FormatMoney(TotalValue)}");
+
+            if (converter != null && converter.Selected != Currency.SEK)
+            {
+                text.AppendLine($"                       = {converter.Format(TotalValue)} ({converter.RateInfo})");
+            }
+
             text.AppendLine();
 
             text.AppendLine("VALUE BY CATEGORY");
