@@ -22,10 +22,9 @@ namespace IndividualProjectInventoryManagement.Models.Enums
     // The three yarn brands in the shop
     public enum YarnBrand
     {
-        // Enum names cannot contain å, ä or ö in a practical way (they would
-        // be awkward to type and to save in JSON), so the NAME is plain
-        // "Jarbo". The [Description] attribute holds the text that is SHOWN
-        // to the user. EnumExtensions.ToDisplayText() reads it.
+        // Enum names cannot practically contain å, ä or ö, so the NAME is
+        // plain "Jarbo". The [Description] attribute holds the text that is
+        // SHOWN to the user. EnumExtensions.ToDisplayText() reads it.
         [Description("Järbo")]
         Jarbo,
 
@@ -35,32 +34,32 @@ namespace IndividualProjectInventoryManagement.Models.Enums
         Sandnes
     }
 
-    // The yarn products. Five per brand, 15 in total.
-    // All names are invented. They are grouped by brand with comments, and
-    // BrandCatalog (in the Rules folder) records which names belong to which brand.
+    // The yarn products. All names are invented.
+    // THIS IS THE ONE PLACE to change a brand's yarn range. Every name is
+    // tagged with its brand, and BrandCatalog builds its lists from the tags:
+    //   - add a yarn    -> add one line
+    //   - rename a yarn -> change the name on its line
+    //   - remove a yarn -> delete its line
     // Each name must be unique inside this enum.
     public enum YarnName
     {
-        // Järbo
-        MorningMist,
-        Dusk,
-        OatField,
-        Lingonberry,
-        BirchBark,
+        [Brand(YarnBrand.Jarbo)] MorningMist,
+        [Brand(YarnBrand.Jarbo)] Dusk,
+        [Brand(YarnBrand.Jarbo)] OatField,
+        [Brand(YarnBrand.Jarbo)] Lingonberry,
+        [Brand(YarnBrand.Jarbo)] BirchBark,
 
-        // Drops
-        NordicSky,
-        IceField,
-        PineForest,
-        SeaBreeze,
-        CloudSoft,
+        [Brand(YarnBrand.Drops)] NordicSky,
+        [Brand(YarnBrand.Drops)] IceField,
+        [Brand(YarnBrand.Drops)] PineForest,
+        [Brand(YarnBrand.Drops)] SeaBreeze,
+        [Brand(YarnBrand.Drops)] CloudSoft,
 
-        // Sandnes Garn
-        Fjordline,
-        Coastline,
-        Highland,
-        Lagoon,
-        Granite
+        [Brand(YarnBrand.Sandnes)] Fjordline,
+        [Brand(YarnBrand.Sandnes)] Coastline,
+        [Brand(YarnBrand.Sandnes)] Highland,
+        [Brand(YarnBrand.Sandnes)] Lagoon,
+        [Brand(YarnBrand.Sandnes)] Granite
     }
 
     // What the yarn is made of

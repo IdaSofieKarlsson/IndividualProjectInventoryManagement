@@ -8,9 +8,8 @@ namespace IndividualProjectInventoryManagement.Models.Enums
     // ------------------------------------------------------------------
     // Enums for OTHER SUPPLIES (small things: stitch markers, tape measures ...)
     // ------------------------------------------------------------------
-    // Here the "name" is simply the KIND of supply, which means the old SupplyType idea from
-    // the plan is not needed any more. Every brand below sells every kind;
-    // BrandCatalog does not restrict the combinations for this category.
+    // Here the "name" is simply the KIND of supply, and every brand sells
+    // every kind, so the names carry no [Brand] tags.
     // ------------------------------------------------------------------
 
     public enum OtherSupplyBrand
@@ -38,4 +37,5 @@ namespace IndividualProjectInventoryManagement.Models.Enums
         Steel,
         Brass
     }
+
 }

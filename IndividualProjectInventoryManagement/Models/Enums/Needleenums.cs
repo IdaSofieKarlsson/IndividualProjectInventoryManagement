@@ -29,29 +29,27 @@ namespace IndividualProjectInventoryManagement.Models.Enums
         KnitPro
     }
 
-    // Five needle products per brand, 15 in total (all invented)
+    // The needle products (all invented), each tagged with its brand.
+    // This enum is the one place to change a brand's needle range.
     public enum NeedleName
     {
-        // Järbo
-        Classic,
-        Ripple,
-        Pocket,
-        Travel,
-        Studio,
+        [Brand(NeedleBrand.Jarbo)] Classic,
+        [Brand(NeedleBrand.Jarbo)] Ripple,
+        [Brand(NeedleBrand.Jarbo)] Pocket,
+        [Brand(NeedleBrand.Jarbo)] Travel,
+        [Brand(NeedleBrand.Jarbo)] Studio,
 
-        // Addi
-        SwiftLane,
-        FineLace,
-        Comfort,
-        QuickSwap,
-        Everyday,
+        [Brand(NeedleBrand.Addi)] SwiftLane,
+        [Brand(NeedleBrand.Addi)] FineLace,
+        [Brand(NeedleBrand.Addi)] Comfort,
+        [Brand(NeedleBrand.Addi)] QuickSwap,
+        [Brand(NeedleBrand.Addi)] Everyday,
 
-        // KnitPro
-        Smooth,
-        Ergo,
-        ColourBurst,
-        SockMaster,
-        ChunkyCable
+        [Brand(NeedleBrand.KnitPro)] Smooth,
+        [Brand(NeedleBrand.KnitPro)] Ergo,
+        [Brand(NeedleBrand.KnitPro)] ColourBurst,
+        [Brand(NeedleBrand.KnitPro)] SockMaster,
+        [Brand(NeedleBrand.KnitPro)] ChunkyCable
     }
 
     public enum NeedleMaterial
@@ -64,7 +62,7 @@ namespace IndividualProjectInventoryManagement.Models.Enums
     }
 
     // Needles come in different shapes. This is an extra field that
-    // only needles have, so it lives on the Needle class later.
+    // only needles have, so it lives on the Needle class.
     public enum NeedleType
     {
         Straight,
