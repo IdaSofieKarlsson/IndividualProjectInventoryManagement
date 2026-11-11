@@ -1,10 +1,8 @@
-﻿using IndividualProjectInventoryManagement.Models;
+﻿using System.Globalization;
+using System.Text;
+using IndividualProjectInventoryManagement.Models;
 using IndividualProjectInventoryManagement.Models.Enums;
 using IndividualProjectInventoryManagement.Services;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 
 namespace IndividualProjectInventoryManagement.UI
 {
@@ -55,6 +53,11 @@ namespace IndividualProjectInventoryManagement.UI
                 {
                     Display.Error(ex.Message);
                 }
+                // The change was made in memory, but writing the file failed
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Display.Error($"The change could not be saved to the file: {ex.Message}");
+                }
 
                 // Browse has its own screen loop and no need for a pause
                 if (choice != 1)
@@ -69,6 +72,7 @@ namespace IndividualProjectInventoryManagement.UI
             Console.Clear();
             Display.Header("KNAPPEN'S YARN STORE");
             Console.WriteLine($"{inventory.Count} products in the inventory");
+            Console.WriteLine($"Saved automatically to: {inventory.StorageLocation}");
 
             int needAttention = inventory.ViewProducts(new ProductFilter(NeedsAttentionOnly: true)).Count;
 

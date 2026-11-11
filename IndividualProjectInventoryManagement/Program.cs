@@ -1,25 +1,43 @@
-﻿using IndividualProjectInventoryManagement.Data;
-using IndividualProjectInventoryManagement.Models;
-using IndividualProjectInventoryManagement.Models.Enums;
-using IndividualProjectInventoryManagement.Rules;
+﻿using System.Text;
+using IndividualProjectInventoryManagement.Data;
 using IndividualProjectInventoryManagement.Services;
 using IndividualProjectInventoryManagement.UI;
-using System.Text;
-
-
-Console.WriteLine("Inventory Management - Knappen's Yarn Store");
 
 // Makes the console show and accept å, ä and ö
 Console.OutputEncoding = Encoding.UTF8;
 Console.InputEncoding = Encoding.UTF8;
 
-Inventory inventory = new Inventory();
+// The data file lives next to the program (bin/Debug/net8.0 in Visual Studio)
+string dataFile = Path.Combine(AppContext.BaseDirectory, "inventory.json");
 
-// For now the shop starts with the sample data every time.
-// When JSON storage is added, this is replaced by "load the saved file".
-foreach (Product product in SampleData.Create())
+// Inventory gets its storage from here. It does not know it is a JSON file.
+Inventory inventory = new Inventory(new JsonProductRepository(dataFile));
+
+try
 {
-    inventory.AddProduct(product);
+    LoadOutcome outcome = inventory.Load();
+
+    foreach (string warning in outcome.Warnings)
+    {
+        Display.Warning(warning);
+    }
+
+    // No file yet = the very first start: begin with the sample shop
+    if (!outcome.FileFound)
+    {
+        inventory.AddProducts(SampleData.Create());
+        Display.Success("First start: the sample products were loaded and saved.");
+    }
+
+    if (!outcome.FileFound || outcome.Warnings.Count > 0)
+    {
+        ConsoleInput.Pause();
+    }
+}
+catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+{
+    Display.Error($"Could not read or write the data file {dataFile}: {ex.Message}");
+    return;
 }
 
 new ConsoleMenu(inventory).Run();

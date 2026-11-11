@@ -1,9 +1,8 @@
-﻿using IndividualProjectInventoryManagement.Models;
-using IndividualProjectInventoryManagement.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
+using IndividualProjectInventoryManagement.Data;
+using IndividualProjectInventoryManagement.Models;
+using IndividualProjectInventoryManagement.Models.Enums;
 
 namespace IndividualProjectInventoryManagement.Services
 {
@@ -24,9 +23,11 @@ namespace IndividualProjectInventoryManagement.Services
     //   - "This breaks a rule"       -> the method throws an exception
     //     (a duplicate product, or removing more than is in stock)
     //
-    // In this step everything lives in memory. Saving to a JSON file is
-    // added later, and will happen inside the methods that change data.
-    // That is why all changes must go THROUGH Inventory.
+    // Storage: the list lives in memory while the program runs, and every
+    // method that changes something ends with Save() (autosave). Inventory
+    // only knows the IProductRepository contract, not that it is a JSON file.
+    // That is why all changes must go THROUGH Inventory: a change made
+    // directly on a product would never be saved.
     // ------------------------------------------------------------------
     public class Inventory
     {
@@ -38,7 +39,55 @@ namespace IndividualProjectInventoryManagement.Services
         // The ID that the next new product receives. It only counts upwards.
         private int nextId = 1;
 
+        // The storage. It is handed in (injected) from Program.cs.
+        private readonly IProductRepository repository;
+
+        public Inventory(IProductRepository repository)
+        {
+            this.repository = repository;
+        }
+
         public int Count => products.Count;
+
+        // Where the data is stored, for display in the menu
+        public string StorageLocation => repository.Location;
+
+        // ==============================================================
+        // LOAD AND SAVE
+        // ==============================================================
+        // Reads the saved products. Broken entries are skipped and reported
+        // as warnings. Nothing is written back until the next change.
+        public LoadOutcome Load()
+        {
+            LoadResult result = repository.Load();
+
+            products.Clear();
+            nextId = 1;
+
+            List<string> warnings = new List<string>(result.Warnings);
+
+            foreach (Product product in result.Products)
+            {
+                try
+                {
+                    AddWithoutSaving(product);
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+                {
+                    warnings.Add($"Skipped {product}: {ex.Message}");
+                }
+            }
+
+            // Never go below the saved counter, so deleted IDs are not reused
+            nextId = Math.Max(nextId, result.NextId);
+
+            return new LoadOutcome(result.FileFound, warnings);
+        }
+
+        private void Save()
+        {
+            repository.Save(products, nextId);
+        }
 
         // ==============================================================
         // CREATE
@@ -46,6 +95,25 @@ namespace IndividualProjectInventoryManagement.Services
         // Adds a product and gives it an ID. Returns the product, so the
         // caller can show "Added #14 ...".
         public Product AddProduct(Product product)
+        {
+            Product added = AddWithoutSaving(product);
+            Save();
+            return added;
+        }
+
+        // Adds many products and saves ONCE at the end (used for the sample data)
+        public void AddProducts(IEnumerable<Product> newProducts)
+        {
+            foreach (Product product in newProducts)
+            {
+                AddWithoutSaving(product);
+            }
+
+            Save();
+        }
+
+        // The real work of adding. Load() uses it too, and must not save.
+        private Product AddWithoutSaving(Product product)
         {
             if (product.Id < 0)
             {
@@ -168,6 +236,7 @@ namespace IndividualProjectInventoryManagement.Services
 
             replacement.Id = id;
             products[index] = replacement;
+            Save();
             return true;
         }
 
@@ -183,6 +252,7 @@ namespace IndividualProjectInventoryManagement.Services
             }
 
             product.AdjustQuantity(amount);
+            Save();
             return true;
         }
 
@@ -197,6 +267,7 @@ namespace IndividualProjectInventoryManagement.Services
             }
 
             product.Quantity = quantity;
+            Save();
             return true;
         }
 
@@ -210,6 +281,7 @@ namespace IndividualProjectInventoryManagement.Services
             }
 
             product.Price = price;
+            Save();
             return true;
         }
 
@@ -220,7 +292,14 @@ namespace IndividualProjectInventoryManagement.Services
         // how many it removed. IDs are unique, so that is 0 or 1.
         public bool DeleteProduct(int id)
         {
-            return products.RemoveAll(product => product.Id == id) > 0;
+            bool removed = products.RemoveAll(product => product.Id == id) > 0;
+
+            if (removed)
+            {
+                Save();
+            }
+
+            return removed;
         }
 
         // ==============================================================
