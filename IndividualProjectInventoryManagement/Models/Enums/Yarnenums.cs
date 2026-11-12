@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
+﻿using System.ComponentModel;
 
 namespace IndividualProjectInventoryManagement.Models.Enums
 {
     // ------------------------------------------------------------------
     // Enums for YARN
     // ------------------------------------------------------------------
-    // Yarn has its OWN brand enum, its own name enum and its own material
-    // enum. Why separate enums per category? Because the brands differ:
+    // Yarn has its OWN brand enum and its own name enum.
+    // Why separate enums per category? Because the brands differ:
     // Järbo sells yarn AND needles, but no hooks. If all brands lived in
     // one shared enum, nothing would stop a hook from getting the brand
     // Drops (which only sells yarn). With one enum per category the
@@ -60,15 +57,5 @@ namespace IndividualProjectInventoryManagement.Models.Enums
         [Brand(YarnBrand.Sandnes)] Highland,
         [Brand(YarnBrand.Sandnes)] Lagoon,
         [Brand(YarnBrand.Sandnes)] Granite
-    }
-
-    // What the yarn is made of
-    public enum YarnMaterial
-    {
-        Cotton,
-        Wool,
-        Merino,
-        Alpaca,
-        Acrylic
     }
 }

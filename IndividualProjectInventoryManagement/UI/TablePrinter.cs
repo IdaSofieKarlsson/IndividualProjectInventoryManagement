@@ -22,11 +22,11 @@ namespace IndividualProjectInventoryManagement.UI
     public static class TablePrinter
     {
         private static readonly string[] Headers =
-            { "ID", "Category", "Brand", "Name", "Material", "Type", "Size", "Length", "Qty", "Price", "Status" };
+            { "ID", "Category", "Brand", "Name", "Material", "Type", "Size", "Length", "Qty", "Buy", "Sell", "Status" };
 
         // Numbers line up best when right-aligned
         private static readonly bool[] RightAligned =
-            { true, false, false, false, false, false, true, true, true, true, false };
+            { true, false, false, false, false, false, true, true, true, true, true, false };
 
         public static void Print(IReadOnlyList<Product> products, CurrencyConverter converter)
         {
@@ -37,9 +37,10 @@ namespace IndividualProjectInventoryManagement.UI
             }
 
             // Turn every product into one row of text cells
-            // The price column shows the chosen currency, e.g. "Price (EUR)"
+            // The price columns show the chosen currency, e.g. "Buy (EUR)"
             string[] headers = (string[])Headers.Clone();
-            headers[9] = $"Price ({converter.Selected})";
+            headers[9] = $"Buy ({converter.Selected})";
+            headers[10] = $"Sell ({converter.Selected})";
 
             List<string[]> rows = products.Select(product => ToRow(product, converter)).ToList();
 
@@ -65,7 +66,7 @@ namespace IndividualProjectInventoryManagement.UI
             }
 
             Console.WriteLine();
-            Console.WriteLine($"{products.Count} product(s). Prices in {converter.Selected}.");
+            Console.WriteLine($"{products.Count} product(s). Buy = purchase price, Sell = selling price. Prices in {converter.Selected}.");
         }
 
         private static string[] ToRow(Product product, CurrencyConverter converter) => new[]
@@ -79,7 +80,8 @@ namespace IndividualProjectInventoryManagement.UI
             product.SizeText,
             product.LengthText,
             product.Quantity.ToString(CultureInfo.InvariantCulture),
-            converter.Convert(product.Price).ToString("F2", CultureInfo.InvariantCulture),
+            converter.FormatNumber(product.PurchasePrice),
+            converter.FormatNumber(product.SellingPrice),
             product.GetStockStatus() switch
             {
                 StockStatus.OutOfStock => "OUT",

@@ -58,10 +58,12 @@ namespace IndividualProjectInventoryManagement.Data
                 file = null;
             }
 
-            if (file == null)
+            // An unreadable file, or one written by an older version of the
+            // program with a different format
+            if (file == null || file.Version != InventoryFileDto.CurrentVersion)
             {
                 string aside = MoveCorruptFileAside();
-                warnings.Add($"The data file could not be read. It was kept as {Path.GetFileName(aside)} and a new empty inventory was started.");
+                warnings.Add($"The data file was damaged or from an older version. It was kept as {Path.GetFileName(aside)} and a new empty inventory was started.");
                 return new LoadResult(true, new List<Product>(), 1, warnings);
             }
 

@@ -1,8 +1,5 @@
 ﻿using IndividualProjectInventoryManagement.Models.Enums;
 using IndividualProjectInventoryManagement.Rules;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IndividualProjectInventoryManagement.Models
 {
@@ -27,9 +24,10 @@ namespace IndividualProjectInventoryManagement.Models
             OtherSupplyMaterial material,
             decimal size,
             int quantity,
-            decimal price)
+            decimal purchasePrice,
+            string productDescription)
             // The length is "not applicable", so we pass null
-            : base(ProductCategory.OtherSupply, size, null, quantity, price)
+            : base(ProductCategory.OtherSupply, size, null, quantity, purchasePrice, productDescription)
         {
             if (!BrandCatalog.IsValidCombination(brand, name))
             {

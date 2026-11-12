@@ -1,8 +1,5 @@
 ﻿using IndividualProjectInventoryManagement.Models.Enums;
 using IndividualProjectInventoryManagement.Rules;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IndividualProjectInventoryManagement.Models
 {
@@ -28,8 +25,9 @@ namespace IndividualProjectInventoryManagement.Models
             decimal size,
             decimal length,
             int quantity,
-            decimal price)
-            : base(ProductCategory.Hook, size, length, quantity, price)
+            decimal purchasePrice,
+            string productDescription)
+            : base(ProductCategory.Hook, size, length, quantity, purchasePrice, productDescription)
         {
             if (!BrandCatalog.IsValidCombination(brand, name))
             {

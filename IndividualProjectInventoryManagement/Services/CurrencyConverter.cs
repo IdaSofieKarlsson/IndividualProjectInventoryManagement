@@ -129,8 +129,19 @@ namespace IndividualProjectInventoryManagement.Services
         public decimal Convert(decimal amountSek, Currency currency)
             => Math.Round(amountSek * ratesFromSek[currency], 2);
 
-        // "3.58 EUR"
-        public string Format(decimal amountSek)
-            => $"{Convert(amountSek).ToString("F2", CultureInfo.InvariantCulture)} {Selected}";
+        // Just the number: "3.58", or "39" for a whole number of SEK
+        public string FormatNumber(decimal amountSek)
+        {
+            decimal value = Convert(amountSek);
+            bool isWhole = value == Math.Truncate(value);
+
+            // Whole kronor are shown without decimals. Other currencies always
+            // get two decimals.
+            string format = Selected == Currency.SEK && isWhole ? "F0" : "F2";
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
+
+        // "3.58 EUR" or "39 SEK"
+        public string Format(decimal amountSek) => $"{FormatNumber(amountSek)} {Selected}";
     }
 }

@@ -36,7 +36,7 @@ namespace IndividualProjectInventoryManagement.UI
             {
                 ShowMainMenu();
 
-                int choice = ConsoleInput.ReadChoice(9);
+                int choice = ConsoleInput.ReadChoice(8);
 
                 if (choice == 0)
                 {
@@ -86,14 +86,13 @@ namespace IndividualProjectInventoryManagement.UI
 
             Console.WriteLine();
             Console.WriteLine("  1. Browse products (filter, search, sort)");
-            Console.WriteLine("  2. Show product details");
-            Console.WriteLine("  3. Add product");
-            Console.WriteLine("  4. Update product (stock, price, details)");
-            Console.WriteLine("  5. Delete product");
-            Console.WriteLine("  6. Inventory report");
-            Console.WriteLine("  7. Products that need attention");
-            Console.WriteLine("  8. Sorted by total value");
-            Console.WriteLine("  9. Change display currency");
+            Console.WriteLine("  2. Present products");
+            Console.WriteLine("  3. Show product details");
+            Console.WriteLine("  4. Add product");
+            Console.WriteLine("  5. Update product (stock, price, description, details)");
+            Console.WriteLine("  6. Delete product");
+            Console.WriteLine("  7. Inventory report");
+            Console.WriteLine("  8. Change display currency");
             Console.WriteLine("  0. Exit");
             Console.WriteLine();
         }
@@ -103,14 +102,13 @@ namespace IndividualProjectInventoryManagement.UI
             switch (choice)
             {
                 case 1: Browse(); break;
-                case 2: ShowDetails(); break;
-                case 3: AddProduct(); break;
-                case 4: UpdateProduct(); break;
-                case 5: DeleteProduct(); break;
-                case 6: ShowReport(); break;
-                case 7: ShowNeedsAttention(); break;
-                case 8: ShowByValue(); break;
-                case 9: ChangeCurrency(); break;
+                case 2: PresentProducts(); break;
+                case 3: ShowDetails(); break;
+                case 4: AddProduct(); break;
+                case 5: UpdateProduct(); break;
+                case 6: DeleteProduct(); break;
+                case 7: ShowReport(); break;
+                case 8: ChangeCurrency(); break;
             }
         }
 
@@ -199,7 +197,37 @@ namespace IndividualProjectInventoryManagement.UI
         }
 
         // ==============================================================
-        // 2. Details
+        // 2. Present products (a customer-friendly list)
+        // ==============================================================
+        // One line per product:  Brand - Name - Description - Selling price
+        // The price is shown in the currency chosen in the menu.
+        private void PresentProducts()
+        {
+            Display.Header("PRESENT PRODUCTS");
+
+            // One heading per category, and the brands sorted within it
+            foreach (ProductCategory category in Enum.GetValues<ProductCategory>())
+            {
+                List<Product> products = inventory.ViewProducts(new ProductFilter(Category: category), SortField.Brand);
+
+                if (products.Count == 0)
+                {
+                    continue;
+                }
+
+                Console.WriteLine();
+                Display.Coloured(category.ToDisplayText().ToUpperInvariant(), ConsoleColor.Cyan);
+
+                foreach (Product product in products)
+                {
+                    Console.WriteLine(
+                        $"{product.BrandText} - {product.NameText} - {product.ProductDescription} - {currencyConverter.Format(product.SellingPrice)}");
+                }
+            }
+        }
+
+        // ==============================================================
+        // 3. Details
         // ==============================================================
         private void ShowDetails()
         {
@@ -213,13 +241,13 @@ namespace IndividualProjectInventoryManagement.UI
 
                 if (currencyConverter.Selected != Currency.SEK)
                 {
-                    Console.WriteLine($"  In {currencyConverter.Selected,-5}  : price {currencyConverter.Format(product.Price)}, value {currencyConverter.Format(product.TotalValue)}");
+                    Console.WriteLine($"  In {currencyConverter.Selected,-5}  : purchase {currencyConverter.Format(product.PurchasePrice)}, selling {currencyConverter.Format(product.SellingPrice)}");
                 }
             }
         }
 
         // ==============================================================
-        // 3. Add
+        // 4. Add
         // ==============================================================
         private void AddProduct()
         {
@@ -246,7 +274,7 @@ namespace IndividualProjectInventoryManagement.UI
         }
 
         // ==============================================================
-        // 4. Update
+        // 5. Update
         // ==============================================================
         private void UpdateProduct()
         {
@@ -263,12 +291,13 @@ namespace IndividualProjectInventoryManagement.UI
             Console.WriteLine();
             Console.WriteLine("  1. Add or remove stock (delivery / sale)");
             Console.WriteLine("  2. Set exact stock (after counting)");
-            Console.WriteLine("  3. Change price");
-            Console.WriteLine("  4. Change other details (brand, name, size...)");
+            Console.WriteLine("  3. Change purchase price (selling price follows)");
+            Console.WriteLine("  4. Change description");
+            Console.WriteLine("  5. Change other details (brand, name, size...)");
             Console.WriteLine("  0. Back");
             Console.WriteLine();
 
-            switch (ConsoleInput.ReadChoice(4))
+            switch (ConsoleInput.ReadChoice(5))
             {
                 case 1:
                     int? amount = ConsoleInput.ReadInt("Amount (positive = delivery, negative = sale)", -100000, 100000);
@@ -293,16 +322,26 @@ namespace IndividualProjectInventoryManagement.UI
                     break;
 
                 case 3:
-                    decimal? price = ConsoleInput.ReadDecimal($"New price in {Product.BaseCurrency}", 0.01m, 100000m);
+                    decimal? price = ConsoleInput.ReadDecimal($"New purchase price in {Product.BaseCurrency}", 1m, 100000m);
 
                     if (price != null)
                     {
-                        inventory.SetPrice(product.Id, price.Value);
-                        Display.Success($"{product} now costs {product.Price.ToString("F2", CultureInfo.InvariantCulture)} {Product.BaseCurrency}.");
+                        inventory.SetPurchasePrice(product.Id, price.Value);
+                        Display.Success($"{product}: purchase price {price.Value.ToString("0.##", CultureInfo.InvariantCulture)} {Product.BaseCurrency}, selling price {product.SellingPrice} {Product.BaseCurrency}.");
                     }
                     break;
 
                 case 4:
+                    string? description = ProductBuilder.AskForDescription();
+
+                    if (description != null)
+                    {
+                        inventory.SetDescription(product.Id, description);
+                        Display.Success("The description was updated.");
+                    }
+                    break;
+
+                case 5:
                     Console.WriteLine();
                     Console.WriteLine("Enter the new details. The ID stays the same.");
 
@@ -323,7 +362,7 @@ namespace IndividualProjectInventoryManagement.UI
         }
 
         // ==============================================================
-        // 5. Delete
+        // 6. Delete
         // ==============================================================
         private void DeleteProduct()
         {
@@ -351,7 +390,7 @@ namespace IndividualProjectInventoryManagement.UI
         }
 
         // ==============================================================
-        // 6. Report
+        // 7. Report
         // ==============================================================
         private void ShowReport()
         {
@@ -388,25 +427,7 @@ namespace IndividualProjectInventoryManagement.UI
         }
 
         // ==============================================================
-        // 7 and 8. Ready-made views
-        // ==============================================================
-        private void ShowNeedsAttention()
-        {
-            Display.Header("PRODUCTS THAT NEED ATTENTION");
-
-            // Status descending: out of stock first, then low stock
-            PrintTable(inventory.ViewProducts(
-                new ProductFilter(NeedsAttentionOnly: true), SortField.Status, descending: true));
-        }
-
-        private void ShowByValue()
-        {
-            Display.Header("PRODUCTS BY TOTAL VALUE (HIGHEST FIRST)");
-            PrintTable(inventory.ViewProducts(sortBy: SortField.TotalValue, descending: true));
-        }
-
-        // ==============================================================
-        // 9. Display currency
+        // 8. Display currency
         // ==============================================================
         // Only changes what is SHOWN. Prices are always stored in SEK.
         private void ChangeCurrency()

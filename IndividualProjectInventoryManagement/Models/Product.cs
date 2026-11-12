@@ -1,9 +1,6 @@
-﻿using IndividualProjectInventoryManagement.Models.Enums;
+﻿using System.Globalization;
+using IndividualProjectInventoryManagement.Models.Enums;
 using IndividualProjectInventoryManagement.Rules;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 
 namespace IndividualProjectInventoryManagement.Models
 {
@@ -30,6 +27,16 @@ namespace IndividualProjectInventoryManagement.Models
     {
         // The shop's prices are stored in SEK. Currency conversion comes later.
         public const string BaseCurrency = "SEK";
+
+        // The selling price is always the purchase price times 3, rounded
+        // DOWN to a whole number of kronor
+        public const int SellingPriceMultiplier = 3;
+
+        // Longest allowed product description (characters)
+        public const int MaxDescriptionLength = 80;
+
+        // What is shown when a value does not apply (a yarn has no size)
+        public const string NoValue = "-";
 
         // --------------------------------------------------------------
         // Properties that are SET ONCE and never change
@@ -58,7 +65,8 @@ namespace IndividualProjectInventoryManagement.Models
         // The real value lives in a private "backing field". This makes it
         // impossible to end up with a negative quantity, whoever sets it.
         private int quantity;
-        private decimal price;
+        private decimal purchasePrice;
+        private string productDescription = string.Empty;
 
         public int Quantity
         {
@@ -74,18 +82,41 @@ namespace IndividualProjectInventoryManagement.Models
             }
         }
 
-        // Price per piece, in SEK
-        public decimal Price
+        // What the shop PAYS for one piece, in SEK.
+        // At least 1 kr, so that the selling price can never round down to 0.
+        public decimal PurchasePrice
         {
-            get => price;
+            get => purchasePrice;
             set
             {
-                if (value <= 0)
+                if (value < 1)
                 {
-                    throw new ArgumentException("Price must be above 0.");
+                    throw new ArgumentException("The purchase price must be at least 1.");
                 }
 
-                price = value;
+                purchasePrice = value;
+            }
+        }
+
+        // A short text about the product, shown when products are presented
+        public string ProductDescription
+        {
+            get => productDescription;
+            set
+            {
+                string text = value?.Trim() ?? string.Empty;
+
+                if (text.Length == 0)
+                {
+                    throw new ArgumentException("The description cannot be empty.");
+                }
+
+                if (text.Length > MaxDescriptionLength)
+                {
+                    throw new ArgumentException($"The description can be at most {MaxDescriptionLength} characters.");
+                }
+
+                productDescription = text;
             }
         }
 
@@ -111,8 +142,16 @@ namespace IndividualProjectInventoryManagement.Models
         // --------------------------------------------------------------
         // Calculated properties: never stored, worked out when read
         // --------------------------------------------------------------
-        // The value of everything in stock of this product
-        public decimal TotalValue => Quantity * Price;
+        // What the shop CHARGES for one piece, in whole SEK:
+        // purchase price x 3, rounded down. 12.50 x 3 = 37.50 -> 37.
+        // It is calculated, never stored, so it can never be out of date.
+        public int SellingPrice => (int)Math.Floor(PurchasePrice * SellingPriceMultiplier);
+
+        // What the stock cost the shop (pieces x purchase price)
+        public decimal StockValue => Quantity * PurchasePrice;
+
+        // What the stock is worth when sold (pieces x selling price)
+        public decimal SalesValue => Quantity * SellingPrice;
 
         // "4.0 mm", "50 g" or "-" when not applicable
         public string SizeText
@@ -121,7 +160,7 @@ namespace IndividualProjectInventoryManagement.Models
             {
                 if (Size is null)
                 {
-                    return "-";
+                    return NoValue;
                 }
 
                 CategoryRules rules = ProductRules.For(Category);
@@ -139,7 +178,7 @@ namespace IndividualProjectInventoryManagement.Models
             {
                 if (Length is null)
                 {
-                    return "-";
+                    return NoValue;
                 }
 
                 string number = Length.Value.ToString("F0", CultureInfo.InvariantCulture);
@@ -170,7 +209,13 @@ namespace IndividualProjectInventoryManagement.Models
         //
         // We check size and length against ProductRules here, once, for
         // all categories. A product with an invalid size can never exist.
-        protected Product(ProductCategory category, decimal? size, decimal? length, int quantity, decimal price)
+        protected Product(
+            ProductCategory category,
+            decimal? size,
+            decimal? length,
+            int quantity,
+            decimal purchasePrice,
+            string productDescription)
         {
             if (!ProductRules.IsValidSize(category, size))
             {
@@ -189,7 +234,8 @@ namespace IndividualProjectInventoryManagement.Models
             // These go through the properties above, so the checks for
             // quantity and price run here too.
             Quantity = quantity;
-            Price = price;
+            PurchasePrice = purchasePrice;
+            ProductDescription = productDescription;
         }
 
         // --------------------------------------------------------------
@@ -233,11 +279,20 @@ namespace IndividualProjectInventoryManagement.Models
             List<string> lines = new List<string>
             {
                 $"#{Id}  {Category.ToDisplayText()}: {BrandText} {NameText}",
-                $"  Material : {MaterialText}",
-                $"  Size     : {SizeText}"
+                $"  {ProductDescription}"
             };
 
             // Only show the lines that apply to this product
+            if (MaterialText != NoValue)
+            {
+                lines.Add($"  Material : {MaterialText}");
+            }
+
+            if (Size != null)
+            {
+                lines.Add($"  Size     : {SizeText}");
+            }
+
             if (Length != null)
             {
                 lines.Add($"  Length   : {LengthText}");
@@ -249,8 +304,9 @@ namespace IndividualProjectInventoryManagement.Models
             }
 
             lines.Add($"  In stock : {Quantity} pcs ({GetStockStatus().ToDisplayText()})");
-            lines.Add($"  Price    : {FormatMoney(Price)}");
-            lines.Add($"  Value    : {FormatMoney(TotalValue)}");
+            lines.Add($"  Purchase : {FormatMoney(PurchasePrice)}");
+            lines.Add($"  Selling  : {SellingPrice} {BaseCurrency}");
+            lines.Add($"  Stock value (purchase): {FormatMoney(StockValue)}");
 
             return string.Join(Environment.NewLine, lines);
         }

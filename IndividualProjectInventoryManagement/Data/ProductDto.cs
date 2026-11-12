@@ -27,12 +27,13 @@
         public string Category { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
-        public string Material { get; set; } = string.Empty;
+        public string? Material { get; set; }
         public string? NeedleType { get; set; }
         public decimal? Size { get; set; }
         public decimal? Length { get; set; }
         public int Quantity { get; set; }
-        public decimal Price { get; set; }
+        public decimal PurchasePrice { get; set; }
+        public string ProductDescription { get; set; } = string.Empty;
     }
 
     // The whole file: a version number, the next free ID and the products
@@ -40,7 +41,10 @@
     {
         // If the file format ever changes, the version tells us which format
         // an old file has
-        public int Version { get; set; } = 1;
+        // Version 2: yarn without size/length/material, purchase price, description
+        public const int CurrentVersion = 2;
+
+        public int Version { get; set; } = CurrentVersion;
 
         // Saved so that an ID is never reused, even after the product with
         // the highest ID was deleted

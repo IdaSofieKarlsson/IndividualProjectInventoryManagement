@@ -6,7 +6,7 @@ using IndividualProjectInventoryManagement.Models.Enums;
 namespace IndividualProjectInventoryManagement.Services
 {
     // The totals for one category in the report
-    public record CategorySummary(ProductCategory Category, int Products, int Units, decimal Value);
+    public record CategorySummary(ProductCategory Category, int Products, int Units, decimal PurchaseValue, decimal SalesValue);
 
     // ------------------------------------------------------------------
     // InventoryReport - a snapshot of the stock at one moment
@@ -28,7 +28,11 @@ namespace IndividualProjectInventoryManagement.Services
         // Number of pieces in total
         public int TotalUnits { get; }
 
-        public decimal TotalValue { get; }
+        // What the stock cost the shop (pieces x purchase price)
+        public decimal TotalPurchaseValue { get; }
+
+        // What the stock is worth when sold (pieces x selling price)
+        public decimal TotalSalesValue { get; }
 
         public IReadOnlyList<CategorySummary> Categories { get; }
         public IReadOnlyList<Product> LowStockProducts { get; }
@@ -42,7 +46,8 @@ namespace IndividualProjectInventoryManagement.Services
             GeneratedAt = generatedAt;
             ProductCount = list.Count;
             TotalUnits = list.Sum(product => product.Quantity);
-            TotalValue = list.Sum(product => product.TotalValue);
+            TotalPurchaseValue = list.Sum(product => product.StockValue);
+            TotalSalesValue = list.Sum(product => product.SalesValue);
 
             // One summary per category, also for categories without any
             // products (they show as zeros, so the report always looks the same)
@@ -55,7 +60,8 @@ namespace IndividualProjectInventoryManagement.Services
                         category,
                         inCategory.Count,
                         inCategory.Sum(product => product.Quantity),
-                        inCategory.Sum(product => product.TotalValue));
+                        inCategory.Sum(product => product.StockValue),
+                        inCategory.Sum(product => product.SalesValue));
                 })
                 .ToList();
 
@@ -70,29 +76,30 @@ namespace IndividualProjectInventoryManagement.Services
             // StringBuilder collects text efficiently. Appending to a normal
             // string many times creates a new string each time.
             StringBuilder text = new StringBuilder();
-            string line = new string('-', 60);
+            string line = new string('-', 72);
 
             text.AppendLine("INVENTORY REPORT");
             text.AppendLine($"Generated: {GeneratedAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}");
             text.AppendLine(line);
             text.AppendLine($"Products: {ProductCount}    Units in stock: {TotalUnits}");
-            text.AppendLine($"Total inventory value: {FormatMoney(TotalValue)}");
+            text.AppendLine($"Stock value at purchase price: {FormatMoney(TotalPurchaseValue)}{InCurrency(converter, TotalPurchaseValue)}");
+            text.AppendLine($"Stock value at selling price:  {FormatMoney(TotalSalesValue)}{InCurrency(converter, TotalSalesValue)}");
 
             if (converter != null && converter.Selected != Currency.SEK)
             {
-                text.AppendLine($"                       = {converter.Format(TotalValue)} ({converter.RateInfo})");
+                text.AppendLine($"(Converted with {converter.RateInfo})");
             }
 
             text.AppendLine();
 
             text.AppendLine("VALUE BY CATEGORY");
             // {x,-14} = left-aligned in 14 characters, {x,10} = right-aligned in 10
-            text.AppendLine($"  {"Category",-14}{"Products",10}{"Units",8}{"Value",18}");
+            text.AppendLine($"  {"Category",-14}{"Products",10}{"Units",8}{"Purchase value",18}{"Selling value",18}");
 
             foreach (CategorySummary summary in Categories)
             {
                 text.AppendLine(
-                    $"  {summary.Category.ToDisplayText(),-14}{summary.Products,10}{summary.Units,8}{FormatMoney(summary.Value),18}");
+                    $"  {summary.Category.ToDisplayText(),-14}{summary.Products,10}{summary.Units,8}{FormatMoney(summary.PurchaseValue),18}{FormatMoney(summary.SalesValue),18}");
             }
 
             text.AppendLine();
@@ -122,6 +129,17 @@ namespace IndividualProjectInventoryManagement.Services
             }
 
             return text.ToString();
+        }
+
+        // "  (= 850.00 EUR)" when another currency is selected, otherwise nothing
+        private static string InCurrency(CurrencyConverter? converter, decimal amountSek)
+        {
+            if (converter == null || converter.Selected == Currency.SEK)
+            {
+                return string.Empty;
+            }
+
+            return $"  (= {converter.Format(amountSek)})";
         }
 
         private static string FormatMoney(decimal amount)

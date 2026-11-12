@@ -162,7 +162,7 @@ namespace IndividualProjectInventoryManagement.Services
         // The parameters have default values, so all of these work:
         //     ViewProducts()                                      everything, in ID order
         //     ViewProducts(new ProductFilter(Category: ProductCategory.Yarn))
-        //     ViewProducts(sortBy: SortField.Price, descending: true)
+        //     ViewProducts(sortBy: SortField.SellingPrice, descending: true)
         //
         // It returns a NEW list. The private list itself is never handed out,
         // so nobody outside can add or remove items behind our back.
@@ -271,7 +271,8 @@ namespace IndividualProjectInventoryManagement.Services
             return true;
         }
 
-        public bool SetPrice(int id, decimal price)
+        // The selling price follows automatically (purchase price x 3)
+        public bool SetPurchasePrice(int id, decimal purchasePrice)
         {
             Product? product = FindById(id);
 
@@ -280,7 +281,21 @@ namespace IndividualProjectInventoryManagement.Services
                 return false;
             }
 
-            product.Price = price;
+            product.PurchasePrice = purchasePrice;
+            Save();
+            return true;
+        }
+
+        public bool SetDescription(int id, string description)
+        {
+            Product? product = FindById(id);
+
+            if (product is null)
+            {
+                return false;
+            }
+
+            product.ProductDescription = description;
             Save();
             return true;
         }
@@ -340,6 +355,7 @@ namespace IndividualProjectInventoryManagement.Services
                 product.NameText,
                 product.MaterialText,
                 product.ExtraText,
+                product.ProductDescription,
                 product.SizeText,
                 product.LengthText));
 
@@ -376,8 +392,9 @@ namespace IndividualProjectInventoryManagement.Services
             SortField.Size => product => product.Size ?? 0m,
             SortField.Length => product => product.Length ?? 0m,
             SortField.Quantity => product => product.Quantity,
-            SortField.Price => product => product.Price,
-            SortField.TotalValue => product => product.TotalValue,
+            SortField.PurchasePrice => product => product.PurchasePrice,
+            SortField.SellingPrice => product => product.SellingPrice,
+            SortField.StockValue => product => product.StockValue,
             SortField.Status => product => product.GetStockStatus(),
             _ => throw new ArgumentOutOfRangeException(nameof(field))
         };

@@ -25,7 +25,8 @@ namespace IndividualProjectInventoryManagement.Data
                 Size = product.Size,
                 Length = product.Length,
                 Quantity = product.Quantity,
-                Price = product.Price
+                PurchasePrice = product.PurchasePrice,
+                ProductDescription = product.ProductDescription
             };
 
             // "case Yarn yarn" = if the product IS a Yarn, call it "yarn".
@@ -36,7 +37,6 @@ namespace IndividualProjectInventoryManagement.Data
                 case Yarn yarn:
                     dto.Brand = yarn.Brand.ToString();
                     dto.Name = yarn.Name.ToString();
-                    dto.Material = yarn.Material.ToString();
                     break;
 
                 case Needle needle:
@@ -75,11 +75,9 @@ namespace IndividualProjectInventoryManagement.Data
                 ProductCategory.Yarn => new Yarn(
                     ParseEnum<YarnBrand>(dto.Brand, "brand"),
                     ParseEnum<YarnName>(dto.Name, "name"),
-                    ParseEnum<YarnMaterial>(dto.Material, "material"),
-                    Require(dto.Size, "size"),
-                    Require(dto.Length, "length"),
                     dto.Quantity,
-                    dto.Price),
+                    dto.PurchasePrice,
+                    dto.ProductDescription),
 
                 ProductCategory.Needle => new Needle(
                     ParseEnum<NeedleBrand>(dto.Brand, "brand"),
@@ -89,7 +87,8 @@ namespace IndividualProjectInventoryManagement.Data
                     Require(dto.Size, "size"),
                     Require(dto.Length, "length"),
                     dto.Quantity,
-                    dto.Price),
+                    dto.PurchasePrice,
+                    dto.ProductDescription),
 
                 ProductCategory.Hook => new Hook(
                     ParseEnum<HookBrand>(dto.Brand, "brand"),
@@ -98,7 +97,8 @@ namespace IndividualProjectInventoryManagement.Data
                     Require(dto.Size, "size"),
                     Require(dto.Length, "length"),
                     dto.Quantity,
-                    dto.Price),
+                    dto.PurchasePrice,
+                    dto.ProductDescription),
 
                 ProductCategory.OtherSupply => new OtherSupply(
                     ParseEnum<OtherSupplyBrand>(dto.Brand, "brand"),
@@ -106,7 +106,8 @@ namespace IndividualProjectInventoryManagement.Data
                     ParseEnum<OtherSupplyMaterial>(dto.Material, "material"),
                     Require(dto.Size, "size"),
                     dto.Quantity,
-                    dto.Price),
+                    dto.PurchasePrice,
+                    dto.ProductDescription),
 
                 _ => throw new ArgumentException($"Unknown category '{dto.Category}'.")
             };

@@ -1,10 +1,7 @@
-﻿using IndividualProjectInventoryManagement.Models;
+﻿using System.Globalization;
+using IndividualProjectInventoryManagement.Models;
 using IndividualProjectInventoryManagement.Models.Enums;
 using IndividualProjectInventoryManagement.Rules;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 
 namespace IndividualProjectInventoryManagement.UI
 {
@@ -36,16 +33,12 @@ namespace IndividualProjectInventoryManagement.UI
 
         private static Product? CreateYarn()
         {
-            CategoryRules rules = ProductRules.For(ProductCategory.Yarn);
-
+            // Yarn only needs a brand and a name (every ball is 50 g)
             if (!ConsoleInput.TryPick("Brand", Enum.GetValues<YarnBrand>(), item => item.ToDisplayText(), out YarnBrand brand)) return null;
             if (!ConsoleInput.TryPick($"Yarn from {brand.ToDisplayText()}", BrandCatalog.GetNames(brand), item => item.ToDisplayText(), out YarnName name)) return null;
-            if (!ConsoleInput.TryPick("Material", Enum.GetValues<YarnMaterial>(), item => item.ToDisplayText(), out YarnMaterial material)) return null;
-            if (!TryPickSize(rules, out decimal size)) return null;
-            if (!TryPickLength(rules, out decimal length)) return null;
-            if (!TryReadStockAndPrice(out int quantity, out decimal price)) return null;
+            if (!TryReadStockPriceAndDescription(out int quantity, out decimal purchasePrice, out string description)) return null;
 
-            return new Yarn(brand, name, material, size, length, quantity, price);
+            return new Yarn(brand, name, quantity, purchasePrice, description);
         }
 
         private static Product? CreateNeedle()
@@ -58,9 +51,9 @@ namespace IndividualProjectInventoryManagement.UI
             if (!ConsoleInput.TryPick("Material", Enum.GetValues<NeedleMaterial>(), item => item.ToDisplayText(), out NeedleMaterial material)) return null;
             if (!TryPickSize(rules, out decimal size)) return null;
             if (!TryPickLength(rules, out decimal length)) return null;
-            if (!TryReadStockAndPrice(out int quantity, out decimal price)) return null;
+            if (!TryReadStockPriceAndDescription(out int quantity, out decimal purchasePrice, out string description)) return null;
 
-            return new Needle(brand, name, material, type, size, length, quantity, price);
+            return new Needle(brand, name, material, type, size, length, quantity, purchasePrice, description);
         }
 
         private static Product? CreateHook()
@@ -72,9 +65,9 @@ namespace IndividualProjectInventoryManagement.UI
             if (!ConsoleInput.TryPick("Material", Enum.GetValues<HookMaterial>(), item => item.ToDisplayText(), out HookMaterial material)) return null;
             if (!TryPickSize(rules, out decimal size)) return null;
             if (!TryPickLength(rules, out decimal length)) return null;
-            if (!TryReadStockAndPrice(out int quantity, out decimal price)) return null;
+            if (!TryReadStockPriceAndDescription(out int quantity, out decimal purchasePrice, out string description)) return null;
 
-            return new Hook(brand, name, material, size, length, quantity, price);
+            return new Hook(brand, name, material, size, length, quantity, purchasePrice, description);
         }
 
         private static Product? CreateOtherSupply()
@@ -87,9 +80,9 @@ namespace IndividualProjectInventoryManagement.UI
             if (!TryPickSize(rules, out decimal size)) return null;
 
             // Other supplies have no length, so there is no question about it
-            if (!TryReadStockAndPrice(out int quantity, out decimal price)) return null;
+            if (!TryReadStockPriceAndDescription(out int quantity, out decimal purchasePrice, out string description)) return null;
 
-            return new OtherSupply(brand, name, material, size, quantity, price);
+            return new OtherSupply(brand, name, material, size, quantity, purchasePrice, description);
         }
 
         // ----------------------------------------------------------
@@ -116,10 +109,13 @@ namespace IndividualProjectInventoryManagement.UI
                 out length);
         }
 
-        private static bool TryReadStockAndPrice(out int quantity, out decimal price)
+        // Asks for quantity, purchase price and description.
+        // The selling price is not asked for: it is calculated (price x 3).
+        private static bool TryReadStockPriceAndDescription(out int quantity, out decimal purchasePrice, out string description)
         {
             quantity = 0;
-            price = 0;
+            purchasePrice = 0;
+            description = string.Empty;
 
             int? enteredQuantity = ConsoleInput.ReadInt("Quantity in stock", 0, 100000);
 
@@ -128,16 +124,52 @@ namespace IndividualProjectInventoryManagement.UI
                 return false;
             }
 
-            decimal? enteredPrice = ConsoleInput.ReadDecimal($"Price per piece in {Product.BaseCurrency}", 0.01m, 100000m);
+            decimal? enteredPrice = ConsoleInput.ReadDecimal($"Purchase price per piece in {Product.BaseCurrency}", 1m, 100000m);
 
             if (enteredPrice is null)
             {
                 return false;
             }
 
+            // The selling price is shown straight away, so the user sees the rule at work
+            int sellingPrice = (int)Math.Floor(enteredPrice.Value * Product.SellingPriceMultiplier);
+            Console.WriteLine($"  Selling price will be {sellingPrice} {Product.BaseCurrency} (purchase price x {Product.SellingPriceMultiplier}, rounded down).");
+
+            string? enteredDescription = ReadDescription();
+
+            if (enteredDescription is null)
+            {
+                return false;
+            }
+
             quantity = enteredQuantity.Value;
-            price = enteredPrice.Value;
+            purchasePrice = enteredPrice.Value;
+            description = enteredDescription;
             return true;
         }
+
+        // A free text. Enter = cancel (null). Asks again if it is too long.
+        private static string? ReadDescription()
+        {
+            while (true)
+            {
+                string text = ConsoleInput.ReadText($"Description (max {Product.MaxDescriptionLength} characters, Enter = cancel)");
+
+                if (text.Length == 0)
+                {
+                    return null;
+                }
+
+                if (text.Length <= Product.MaxDescriptionLength)
+                {
+                    return text;
+                }
+
+                Display.Error($"That is {text.Length} characters. The maximum is {Product.MaxDescriptionLength}.");
+            }
+        }
+
+        // Used by "Update product" to change only the description
+        public static string? AskForDescription() => ReadDescription();
     }
 }

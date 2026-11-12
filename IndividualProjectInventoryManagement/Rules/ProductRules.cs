@@ -1,7 +1,4 @@
 ﻿using IndividualProjectInventoryManagement.Models.Enums;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace IndividualProjectInventoryManagement.Rules
 {
@@ -20,17 +17,15 @@ namespace IndividualProjectInventoryManagement.Rules
         // IMPORTANT: static fields are filled in the order they are written.
         // The lists must be declared BEFORE the dictionary that uses them.
 
-        // Yarn: ball weight in grams, and metres of yarn per ball
-        private static readonly decimal[] YarnSizesGrams = { 25m, 50m, 100m };
-        private static readonly decimal[] YarnLengthsMetres = { 50m, 100m, 150m, 200m, 300m };
-
         // Needles: diameter in millimetres, and length in centimetres
-        private static readonly decimal[] NeedleSizesMm = { 2.0m, 2.5m, 3.0m, 3.5m, 4.0m, 4.5m, 5.0m, 5.5m, 6.0m, 6.5m, 7.0m, 8.0m, 9.0m, 10.0m, 12.0m };
-        private static readonly decimal[] NeedleLengthsCm = { 15m, 20m, 25m, 30m, 35m, 40m, 60m, 80m, 100m, 120m };
+        // 20 cm = double-pointed, 25-40 cm = straight, 60-100 cm = circular
+        private static readonly decimal[] NeedleSizesMm = { 2.0m, 2.5m, 3.0m, 3.5m, 4.0m, 4.5m, 5.0m, 5.5m, 6.0m, 7.0m, 8.0m, 10.0m };
+        private static readonly decimal[] NeedleLengthsCm = { 20m, 25m, 30m, 40m, 60m, 80m, 100m };
 
         // Hooks: diameter in millimetres, and length in centimetres
-        private static readonly decimal[] HookSizesMm = { 2.0m, 2.5m, 3.0m, 3.5m, 4.0m, 4.5m, 5.0m, 5.5m, 6.0m, 6.5m, 7.0m, 8.0m, 9.0m, 10.0m };
-        private static readonly decimal[] HookLengthsCm = { 12m, 14m, 15m, 16m };
+        // 14-15 cm = normal crochet hook, 30 cm = long (Tunisian) hook
+        private static readonly decimal[] HookSizesMm = { 2.0m, 2.5m, 3.0m, 3.5m, 4.0m, 4.5m, 5.0m, 5.5m, 6.0m, 7.0m, 8.0m, 10.0m };
+        private static readonly decimal[] HookLengthsCm = { 14m, 15m, 30m };
 
         // Other supplies: pieces per pack. They have no length.
         private static readonly decimal[] SupplyPackSizes = { 1m, 5m, 10m, 20m };
@@ -39,7 +34,8 @@ namespace IndividualProjectInventoryManagement.Rules
         // One switch from category to its rules
         private static readonly Dictionary<ProductCategory, CategoryRules> rulesByCategory = new()
         {
-            { ProductCategory.Yarn, new CategoryRules(YarnSizesGrams, "g", 0, YarnLengthsMetres, "m") },
+            // Yarn has no size or length (every ball is 50 g): empty lists
+            { ProductCategory.Yarn, new CategoryRules(NoValues, "", 0, NoValues, "") },
             { ProductCategory.Needle, new CategoryRules(NeedleSizesMm, "mm", 1, NeedleLengthsCm, "cm") },
             { ProductCategory.Hook, new CategoryRules(HookSizesMm, "mm", 1, HookLengthsCm, "cm") },
             { ProductCategory.OtherSupply, new CategoryRules(SupplyPackSizes, "pcs", 0, NoValues, "") }

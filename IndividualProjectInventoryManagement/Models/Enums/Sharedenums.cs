@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace IndividualProjectInventoryManagement.Models.Enums
+﻿namespace IndividualProjectInventoryManagement.Models.Enums
 {
     // ------------------------------------------------------------------
     // Enums used by ALL categories
@@ -42,8 +38,9 @@ namespace IndividualProjectInventoryManagement.Models.Enums
         Size,
         Length,
         Quantity,
-        Price,
-        TotalValue,
+        PurchasePrice,
+        SellingPrice,
+        StockValue,
         Status
     }
 }
