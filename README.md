@@ -1,6 +1,6 @@
 # Knappen's Yarn Store
 
-A console application for managing the inventory of a small yarn and knitting shop. Built in C# as the final project of the C# module at Lexicon.
+A console application for managing the inventory of a small yarn and knitting shop. 
 
 The shop sells four kinds of products: **yarn**, **knitting needles**, **crochet hooks** and **other supplies**. The program keeps track of what is in stock, saves everything to a JSON file, and can present the range to customers.
 
@@ -37,7 +37,6 @@ To start over with the sample products, close the program and delete `inventory.
 
 ## Menu
 
-```
 1. Browse products (filter, search, sort)
 2. Present products
 3. Show product details
@@ -47,13 +46,11 @@ To start over with the sample products, close the program and delete `inventory.
 7. Inventory report
 8. Change display currency
 0. Exit
-```
 
 In every list, **0** (or Enter) cancels and goes back.
 
 ## Project structure
 
-```
 IndividualProjectInventoryManagement/
   Models/       What a product is
     Product.cs  (abstract), Yarn.cs, Needle.cs, Hook.cs, OtherSupply.cs
@@ -69,37 +66,22 @@ IndividualProjectInventoryManagement/
     ConsoleMenu.cs, ConsoleInput.cs, ProductBuilder.cs, TablePrinter.cs, Display.cs
   Program.cs    Starts everything
 docs/
-  class-diagram.drawio  (UML class diagram, open at diagrams.net)
-```
+  class-diagram.drawio  UML class diagram
 
 Each folder has one job (separation of concerns). The menu only asks `Inventory` to do things and never touches the product list directly. A `Product` knows nothing about the console or the file.
 
 ## Class diagram
 
-![Class diagram](docs/class-diagram.png)
-
-The diagram source is `docs/class-diagram.drawio`.
+The diagram source is `docs/class-diagram.drawio`
 
 ## Design notes
 
 - **Inheritance and polymorphism**: `Product` is abstract. `Yarn`, `Needle`, `Hook` and `OtherSupply` inherit from it and add what is special about them. `Inventory` holds one `List<Product>` and treats all products alike, for example `GetStockStatus()` automatically uses the right low-stock limit for each kind of product.
-- **Brand and name**: each category has its own enums, so a hook cannot be given a yarn brand. Each product name is tagged with its brand (`[Brand(YarnBrand.Drops)] NordicSky`), and `BrandCatalog` builds the menus from those tags. Changing a brand's range is done in **one place**: the enum file.
+- **Brand and name**: each category has its own enums, so a hook cannot be given a yarn brand. Each product name is tagged with its brand (`[Brand(YarnBrand.Drops)] Safran`), and `BrandCatalog` builds the menus from those tags. Changing a brand's range is done in **one place**: the enum file.
 - **Sizes and lengths**: only fixed values are allowed. They are kept in one place, `ProductRules.cs`, and shown as pick lists.
-- **Yarn** has only a brand and a name (every ball is assumed to weigh 50 g).
+- **Yarn** has only a brand and a name.
 - **Storage** goes through an interface, `IProductRepository`. `Inventory` does not know the data is stored in JSON. Saving writes a temporary file first and then swaps it in, and the previous version is kept as `inventory.json.bak`.
 - **Errors**: a broken rule (duplicate product, removing more stock than exists, invalid value) throws an exception that the menu catches and shows as a red message. An unknown ID is not an error, it just returns `false` or `null`.
-
-## Course requirements and where to find them
-
-| Requirement | Where |
-|---|---|
-| Product with ID, Name, Quantity, Price, `DisplayProductInfo()` | `Models/Product.cs` (`Id`, `NameText`, `Quantity`, `PurchasePrice` and `SellingPrice`) |
-| Inventory with AddProduct, UpdateProduct, DeleteProduct, ViewProducts, GenerateReport | `Services/Inventory.cs` |
-| Menu | `UI/ConsoleMenu.cs` |
-| Save and load from a file | `Data/JsonProductRepository.cs` |
-| Sorting and searching | `Inventory.ViewProducts`, Browse in the menu |
-| Input validation | `UI/ConsoleInput.cs`, `Models/Product.cs`, `Rules/ProductRules.cs` |
-| Report with total value | `Services/InventoryReport.cs` |
 
 ## Manual test checklist
 
@@ -121,14 +103,9 @@ Delete `inventory.json` first, so you start with the sample products.
 - [ ] Change currency: tables, details, present list and report use it
 - [ ] Without internet: a warning about backup rates, and the program still works
 
-Expected report for the unchanged sample data: 16 products, 171 units, stock value 2780.00 SEK at purchase price and 8297 SEK at selling price.
-
 ## Limitations
 
 - The program is single-user and keeps no history of sales or deliveries.
 - Exchange rates are fetched once at start-up.
 - Needle types and lengths are not checked against each other.
-
-## Author
-
-Ida-Sofie, Lexicon, C# module.
+- Yarn has only a brand and a name, colors are not specified at this first version.
