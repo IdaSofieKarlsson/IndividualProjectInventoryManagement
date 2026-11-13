@@ -4,32 +4,25 @@ using IndividualProjectInventoryManagement.Rules;
 
 namespace IndividualProjectInventoryManagement.Models
 {
-    // ------------------------------------------------------------------
     // Product - ABSTRACT base class for everything the shop sells
-    // ------------------------------------------------------------------
-    // Same idea as Asset in the Asset Tracking project:
-    //   - Nobody creates a plain Product with "new Product(...)". The shop
-    //     sells yarn, needles, hooks and supplies, never just "a product".
-    //   - Everything the four categories share is written ONCE, here.
-    //   - Yarn, Needle, Hook and OtherSupply inherit it and add what is
-    //     special about them.
+    // Nobody creates a plain Product with "new Product(...)". The shop sells yarn, needles, hooks and supplies, never just "a product".
+    // Everything the four categories share is written ONCE, here.
+    // arn, Needle, Hook and OtherSupply inherit it and add what is special about them.
     //
-    // THE BIG DIFFERENCE FROM ASSET: brand, name and material are different
-    // enums per category (a Yarn has a YarnBrand, a Hook has a HookBrand),
+    // Brand, name and material are different enums per category (a Yarn has a YarnBrand, a Hook has a HookBrand),
     // so they cannot be declared here. Instead:
     //   - each subclass has its own TYPED properties (Brand, Name, Material)
     //   - this class declares ABSTRACT text versions (BrandText, NameText,
     //     MaterialText) that every subclass must provide
     // Code that handles "any product", such as tables, sorting and search,
     // uses the text versions. Code that needs the exact enum asks the subclass.
-    // ------------------------------------------------------------------
+
     public abstract class Product
     {
         // The shop's prices are stored in SEK. Currency conversion comes later.
         public const string BaseCurrency = "SEK";
 
-        // The selling price is always the purchase price times 3, rounded
-        // DOWN to a whole number of kronor
+        // The selling price is always the purchase price times 3, rounded DOWN to a whole number of kronor
         public const int SellingPriceMultiplier = 3;
 
         // Longest allowed product description (characters)
@@ -38,9 +31,7 @@ namespace IndividualProjectInventoryManagement.Models
         // What is shown when a value does not apply (a yarn has no size)
         public const string NoValue = "-";
 
-        // --------------------------------------------------------------
         // Properties that are SET ONCE and never change
-        // --------------------------------------------------------------
         // Brand, name, material, size and length together say WHICH product
         // this is. A 3.5 mm needle is a different product from a 4.0 mm
         // needle, so these cannot be edited afterwards. Only quantity and
@@ -53,14 +44,11 @@ namespace IndividualProjectInventoryManagement.Models
 
         public ProductCategory Category { get; }
 
-        // "decimal?" = may be null. A null length means "not applicable"
-        // (other supplies have no length).
+        // "decimal?" = may be null. A null length means "not applicable"´(other supplies have no length).
         public decimal? Size { get; }
         public decimal? Length { get; }
 
-        // --------------------------------------------------------------
         // Properties that CAN change, with protection
-        // --------------------------------------------------------------
         // A property with its own set code checks the value BEFORE storing it.
         // The real value lives in a private "backing field". This makes it
         // impossible to end up with a negative quantity, whoever sets it.
@@ -120,28 +108,20 @@ namespace IndividualProjectInventoryManagement.Models
             }
         }
 
-        // --------------------------------------------------------------
         // ABSTRACT members: no code here, every subclass MUST write them
-        // --------------------------------------------------------------
         // If a subclass forgets one, the code does not compile.
         public abstract string BrandText { get; }
         public abstract string NameText { get; }
         public abstract string MaterialText { get; }
 
-        // --------------------------------------------------------------
         // VIRTUAL members: a default here, a subclass MAY change it
-        // --------------------------------------------------------------
-        // Extra information that only some categories have. Needle overrides
-        // it to say "Circular"; the others keep the default (null = nothing).
+        // Extra information that only some categories have. Needle overrides it to say "Circular"; the others keep the default (null = nothing).
         public virtual string? ExtraText => null;
 
-        // At or below this quantity the product counts as LOW STOCK.
-        // Yarn sells fast, so it overrides this with a higher number.
+        // At or below this quantity the product counts as LOW STOCK. Yarn sells fast, so it overrides this with a higher number.
         public virtual int LowStockThreshold => 5;
 
-        // --------------------------------------------------------------
         // Calculated properties: never stored, worked out when read
-        // --------------------------------------------------------------
         // What the shop CHARGES for one piece, in whole SEK:
         // purchase price x 3, rounded down. 12.50 x 3 = 37.50 -> 37.
         // It is calculated, never stored, so it can never be out of date.
@@ -187,10 +167,9 @@ namespace IndividualProjectInventoryManagement.Models
         }
 
         // Two products with the same IdentityKey are the SAME product:
-        // same category, brand, name, material, size, length and (for needles)
-        // type. Inventory uses this to refuse duplicates, so the shop never
-        // has two rows for one article. Stock goes up on the existing row.
-        // "0.####" prints 4.0 and 4.00 identically, as "4".
+        // same category, brand, name, material, size, length and (for needles) type.
+        // Inventory uses this to refuse duplicates, so the shop never has two rows for one article.
+        // Stock goes up on the existing row. "0.####" prints 4.0 and 4.00 identically, as "4".
         public string IdentityKey => string.Join(
             "|",
             Category,
@@ -201,14 +180,9 @@ namespace IndividualProjectInventoryManagement.Models
             Length?.ToString("0.####", CultureInfo.InvariantCulture),
             ExtraText);
 
-        // --------------------------------------------------------------
         // Constructor
-        // --------------------------------------------------------------
-        // "protected" = only subclasses can call it (another sign that
-        // Product is abstract). Each subclass passes its own category.
-        //
-        // We check size and length against ProductRules here, once, for
-        // all categories. A product with an invalid size can never exist.
+        // "protected" = only subclasses can call it (another sign that Product is abstract). Each subclass passes its own category.
+        // We check size and length against ProductRules here, once, for all categories. A product with an invalid size can never exist.
         protected Product(
             ProductCategory category,
             decimal? size,
@@ -238,10 +212,7 @@ namespace IndividualProjectInventoryManagement.Models
             ProductDescription = productDescription;
         }
 
-        // --------------------------------------------------------------
         // Methods
-        // --------------------------------------------------------------
-
         // Red / yellow / normal, the stock version of the old lifecycle colours
         public StockStatus GetStockStatus()
         {
@@ -271,8 +242,7 @@ namespace IndividualProjectInventoryManagement.Models
             Quantity += amount;
         }
 
-        // The method name comes from the course spec. It RETURNS the text
-        // instead of printing it, so Product knows nothing about the console.
+        // The method name comes from the course spec. It RETURNS the text instead of printing it, so Product knows nothing about the console.
         // The menu decides how and where to show it (separation of concerns).
         public string DisplayProductInfo()
         {

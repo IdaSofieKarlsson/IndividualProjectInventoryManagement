@@ -4,11 +4,9 @@ using IndividualProjectInventoryManagement.Rules;
 namespace IndividualProjectInventoryManagement.Models
 {
     // A Yarn IS a Product (inheritance), so it gets all the Product code.
-    //
-    // Yarn is the simplest product: just a brand and a name. Every ball is
-    // assumed to weigh 50 g, so there is no size, no length and no material
-    // to choose. The base class gets null for size and length, which
-    // ProductRules accepts for yarn ("not applicable").
+    // Yarn is the simplest product: just a brand and a name. Every ball is assumed to weigh 50 g, so there is no size,
+    // no length and no material to choose.
+    // The base class gets null for size and length, which ProductRules accepts for yarn ("not applicable").
     public class Yarn : Product
     {
         // The TYPED values: a Yarn can only have a YarnBrand and a YarnName.
@@ -16,8 +14,8 @@ namespace IndividualProjectInventoryManagement.Models
         public YarnBrand Brand { get; }
         public YarnName Name { get; }
 
-        // "override" fills in the abstract members from Product. Here the
-        // typed enum values are turned into display text ("Jarbo" -> "Järbo").
+        // "override" fills in the abstract members from Product.
+        // Here the typed enum values are turned into display text ("Jarbo" -> "Järbo").
         public override string BrandText => Brand.ToDisplayText();
         public override string NameText => Name.ToDisplayText();
 

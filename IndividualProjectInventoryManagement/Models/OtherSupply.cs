@@ -3,8 +3,7 @@ using IndividualProjectInventoryManagement.Rules;
 
 namespace IndividualProjectInventoryManagement.Models
 {
-    // An OtherSupply IS a Product (inheritance): stitch markers, measuring
-    // tape, needle gauges and similar small things.
+    // An OtherSupply IS a Product (inheritance): stitch markers, measuring tape, needle gauges and similar small things.
     // Size = pieces per pack. There is no length, so null goes to the base class.
     public class OtherSupply : Product
     {

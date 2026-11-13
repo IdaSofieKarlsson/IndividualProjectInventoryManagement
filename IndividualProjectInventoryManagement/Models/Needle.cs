@@ -18,8 +18,7 @@ namespace IndividualProjectInventoryManagement.Models
         public override string NameText => Name.ToDisplayText();
         public override string MaterialText => Material.ToDisplayText();
 
-        // Overrides the virtual ExtraText from Product, so that
-        // DisplayProductInfo() also shows "Type : Circular" for needles.
+        // Overrides the virtual ExtraText from Product, so that DisplayProductInfo() also shows "Type : Circular" for needles.
         public override string? ExtraText => Type.ToDisplayText();
 
         // Needles are bought less often than yarn

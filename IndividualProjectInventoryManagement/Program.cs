@@ -7,13 +7,10 @@ using IndividualProjectInventoryManagement.UI;
 Console.OutputEncoding = Encoding.UTF8;
 Console.InputEncoding = Encoding.UTF8;
 
-// Set to true when there is something the user should read before the menu
-// clears the screen
+// Set to true when there is something the user should read before the menu clears the screen
 bool needsPause = false;
 
-// ---------------------------------------------------------------
 // 1. Exchange rates (internet). Failing is fine: backup rates are used.
-// ---------------------------------------------------------------
 CurrencyConverter currencyConverter = new CurrencyConverter();
 
 Console.WriteLine("Fetching exchange rates...");
@@ -25,9 +22,7 @@ if (!currencyConverter.IsUsingLiveRates)
     needsPause = true;
 }
 
-// ---------------------------------------------------------------
 // 2. The inventory and its JSON file
-// ---------------------------------------------------------------
 // The data file lives next to the program (bin/Debug/net8.0 in Visual Studio)
 string dataFile = Path.Combine(AppContext.BaseDirectory, "inventory.json");
 
